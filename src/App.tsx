@@ -1,121 +1,133 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { type FormEvent } from 'react'
 import './App.css'
+import { useQuiz } from './hooks/useQuiz'
+import { PRONOUN_LABEL, TENSE_LABEL, type Tense } from './lib/types'
+
+const ALL_TENSES: Tense[] = ['present', 'preterite']
 
 function App() {
-  const [count, setCount] = useState(0)
+  const {
+    current,
+    feedback,
+    input,
+    setInput,
+    submitAnswer,
+    nextQuestion,
+    score,
+    dueCount,
+    totalCards,
+    enabledTenses,
+    toggleTense,
+    resetProgress,
+  } = useQuiz()
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault()
+    if (feedback) {
+      nextQuestion()
+    } else {
+      submitAnswer()
+    }
+  }
+
+  const accuracy = score.attempted > 0 ? Math.round((score.correct / score.attempted) * 100) : null
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="app">
+      <header>
+        <h1>Verbo</h1>
+        <p className="subtitle">Spanish verb conjugation practice, with spaced repetition on the verbs you miss.</p>
+      </header>
+
+      <section className="scoreboard" aria-label="Score">
+        <div className="stat">
+          <span className="stat-value">{score.correct}/{score.attempted}</span>
+          <span className="stat-label">correct</span>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
+        <div className="stat">
+          <span className="stat-value">{accuracy === null ? '—' : `${accuracy}%`}</span>
+          <span className="stat-label">accuracy</span>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
+        <div className="stat">
+          <span className="stat-value">{score.currentStreak}</span>
+          <span className="stat-label">streak</span>
+        </div>
+        <div className="stat">
+          <span className="stat-value">{score.bestStreak}</span>
+          <span className="stat-label">best streak</span>
+        </div>
+        <div className="stat">
+          <span className="stat-value">{dueCount}/{totalCards}</span>
+          <span className="stat-label">due for review</span>
+        </div>
+      </section>
+
+      <section className="settings" aria-label="Practice settings">
+        <span className="settings-label">Tenses:</span>
+        {ALL_TENSES.map((tense) => (
+          <label key={tense} className="tense-toggle">
+            <input
+              type="checkbox"
+              checked={enabledTenses.includes(tense)}
+              onChange={() => toggleTense(tense)}
+            />
+            {TENSE_LABEL[tense]}
+          </label>
+        ))}
+        <button type="button" className="link-button" onClick={resetProgress}>
+          Reset progress
         </button>
       </section>
 
-      <div className="ticks"></div>
+      {current && (
+        <form className="quiz-card" onSubmit={handleSubmit}>
+          <p className="prompt-tense">{TENSE_LABEL[current.tense]}</p>
+          <p className="prompt-verb">
+            {current.verb.infinitive}
+            <span className="prompt-translation"> — {current.verb.translation}</span>
+          </p>
+          <p className="prompt-pronoun">{PRONOUN_LABEL[current.pronoun]}</p>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+          <input
+            type="text"
+            className="answer-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="type the conjugated verb…"
+            autoFocus
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            disabled={!!feedback}
+            aria-label="Your answer"
+          />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+          {feedback && (
+            <div className={`feedback feedback-${feedback.result}`} role="status">
+              {feedback.result === 'correct' && <p>¡Correcto!</p>}
+              {feedback.result === 'accent' && (
+                <p>
+                  Almost — mind the accent. Correct answer: <strong>{feedback.correctAnswer}</strong>
+                </p>
+              )}
+              {feedback.result === 'incorrect' && (
+                <p>
+                  Not quite. Correct answer: <strong>{feedback.correctAnswer}</strong>
+                </p>
+              )}
+            </div>
+          )}
+
+          <button type="submit" className="submit-button">
+            {feedback ? 'Next →' : 'Check'}
+          </button>
+        </form>
+      )}
+
+      <footer>
+        <p>Progress is saved automatically in this browser.</p>
+      </footer>
+    </div>
   )
 }
 
